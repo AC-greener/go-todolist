@@ -1,74 +1,59 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 )
 
 func main() {
-	// Replace YOUR_API_KEY with your actual Tinify API key
-	apiKey := "1PW34PQl8SQMzMFhwCF4fllYtWmDnPxF"
-	imagePath := "download-bg.png"
-
-	// Read the image from the local file
-	imageData, err := ioutil.ReadFile(imagePath)
+	// 保存任务列表到JSON文件
+	err := loadTasksFromJsonFile("tasks.json")
 	if err != nil {
-		fmt.Println("Error reading the image file:", err)
-		return
+		fmt.Println("从文件中任务列表失败:", err)
 	}
 
-	// Create an HTTP client
-	client := &http.Client{}
-
-	// Create the HTTP request
-	req, err := http.NewRequest("POST", "https://api.tinify.com/shrink", nil)
-	if err != nil {
-		fmt.Println("Error creating HTTP request:", err)
-		return
+	for {
+		fmt.Println("\x1b[32m" + "--------------请选择操作:" + "\x1b[0m")
+		fmt.Println("--------------1. 显示任务列表")
+		fmt.Println("--------------2. 添加任务")
+		fmt.Println("--------------3. 标记任务完成")
+		fmt.Println("--------------4. 删除任务")
+		fmt.Println("--------------5. 查询某一个任务状态")
+		fmt.Println("--------------6. 退出")
+		var choice int
+		fmt.Scanln(&choice)
+		switch choice {
+		case 1:
+			showTasks()
+		case 2:
+			var title, Description string
+			var Priority int
+			fmt.Println("请输入任务标题:")
+			fmt.Scanln(&title)
+			fmt.Println("请输入任务描述:")
+			fmt.Scanln(&Description)
+			fmt.Println("请输入任务优先级:")
+			fmt.Scanln(&Priority)
+			addTask(title, Description, Priority)
+		case 3:
+			fmt.Println("请输入要标记完成的任务序号:")
+			var index int
+			fmt.Scanln(&index)
+			completeTask(index - 1)
+		case 4:
+			fmt.Println("请输入要删除的任务序号:")
+			var index int
+			fmt.Scanln(&index)
+			deleteTask(index - 1)
+		case 5:
+			fmt.Println("请输入要查询的任务序号:")
+			var index int
+			fmt.Scanln(&index)
+			tasks[index-1].showTaskComplete()
+		case 6:
+			fmt.Println("再见!")
+			return
+		default:
+			fmt.Println("无效的选项，请重新选择")
+		}
 	}
-
-	// Set the basic authentication header with your Tinify API key
-	req.SetBasicAuth("api", apiKey)
-
-	// Set the request body with the image data
-	req.Body = ioutil.NopCloser(bytes.NewReader(imageData))
-
-	// Send the HTTP request
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error sending HTTP request:", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	imgURL := resp.Header.Get("Location")
-	resp, err = http.Get(imgURL)
-	//print resp
-	fmt.Println(resp)
-	fmt.Println(resp.Body)
-	fmt.Println(resp.Header)
-	if err != nil {
-		fmt.Println("Error sending HTTP GET request:", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	// Read the response body, which contains the compressed image
-	compressedData, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading the response body:", err)
-		return
-	}
-
-	// Write the compressed image to a new file
-	compressedImagePath := "compressed.png"
-	err = ioutil.WriteFile(compressedImagePath, compressedData, 0644)
-	if err != nil {
-		fmt.Println("Error writing the compressed image:", err)
-		return
-	}
-
-	fmt.Println("Image compression successful. Compressed image saved to", compressedImagePath)
 }
